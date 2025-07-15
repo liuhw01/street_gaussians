@@ -10,6 +10,16 @@ from lib.datasets.base_readers import fetchPly
 from plyfile import PlyData, PlyElement
 from simple_knn._C import distCUDA2
 
+
+# GaussianModelActor代码来看，其核心功能确实不直接包含不同时刻的旋转 / 平移变化计算，
+# 主要聚焦于 actor 的高斯模型初始化、参数更新（增密、修剪、优化）等 “局部” 高斯属性管理。
+# 核心目的是为单个 actor 建立独立的高斯模型管理单元，负责：
+
+# 初始化：从点云初始化高斯点的局部位置（_xyz）、缩放（_scaling）、旋转（_rotation）、特征（_features_dc等）等参数（create_from_pcd方法）。
+# 训练配置：设置针对该 actor 的优化器、学习率调度（training_setup方法），适配其尺度（spatial_lr_scale基于 actor 的边界框）。
+# 动态更新：通过densify_and_prune方法增密高梯度区域的高斯点、修剪低 - opacity 或超出边界的点，维持模型精度。
+# 特征与时序关联：通过傅里叶变换（get_features_fourier）处理特征的时间变化，使 actor 的外观随时间动态调整。
+
 class GaussianModelActor(GaussianModel):
     def __init__(
         self, 
