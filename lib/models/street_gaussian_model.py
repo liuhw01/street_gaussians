@@ -26,6 +26,16 @@ from lib.models.sky_cubemap import SkyCubeMap
 from lib.models.color_correction import ColorCorrection
 from lib.models.camera_pose import PoseCorrection
 
+# 核心子模型：
+# 背景模型（background）：基于 GaussianModelBkgd，负责静态背景（如道路、建筑）的高斯分布建模，初始化时依赖场景中心、半径等全局信息。
+# 动态物体模型（obj_xxx）：每个动态物体（如行人、车辆）通过 GaussianModelActor 单独建模，命名格式为 obj_{track_id:03d}，与追踪 ID 绑定，方便管理不同物体的高斯参数。
+# 天空模型（sky_cubemap）：若 include_sky=True，使用立方体贴图（SkyCubeMap）建模天空；否则可能通过高斯分布建模。
+
+# 辅助模块：
+# actor_pose：管理动态物体的时空位姿（旋转 + 平移），通过追踪数据（obj_tracklets）获取不同时刻的全局位姿。
+# color_correction：处理多帧 / 多相机的颜色不一致问题，通过仿射变换统一颜色空间。
+# pose_correction：优化相机姿态估计误差，间接提升高斯分布的空间一致性。
+
 class StreetGaussianModel(nn.Module):
     def __init__(self, metadata):
         super().__init__()
